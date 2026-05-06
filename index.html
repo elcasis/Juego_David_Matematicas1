@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Color Memory</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;400;600;800;900&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root{--bg:#0C0C14;--fg:#F0EDE8;--muted:#6B6878;--accent:#F59E0B;--accent-dark:#D97706;--border:rgba(255,255,255,0.08);--success:#22C55E;--error:#EF4444;--player:#F59E0B}
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden}
+        h1,h2,h3{font-family:'Outfit',sans-serif}
+        .bg-blob{position:fixed;border-radius:50%;pointer-events:none;filter:blur(120px);opacity:.1;z-index:0}
+        .blob-1{width:500px;height:500px;background:var(--player);top:-150px;left:-100px;animation:bf 22s ease-in-out infinite}
+        .blob-2{width:400px;height:400px;background:#EF4444;bottom:-100px;right:-80px;animation:bf 18s ease-in-out infinite reverse}
+        .blob-3{width:350px;height:350px;background:#F97316;top:40%;left:60%;animation:bf 25s ease-in-out infinite 3s}
+        @keyframes bf{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.1)}66%{transform:translate(-20px,20px) scale(.95)}}
+        .screen{position:fixed;inset:0;z-index:1;display:none;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem}
+        .screen.active{display:flex}
+
+        .start-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:24px;padding:2.2rem 2rem;max-width:520px;width:100%;text-align:center;backdrop-filter:blur(20px);animation:fu .8s ease-out}
+        .logo-swatch{display:inline-flex;gap:5px;margin-bottom:1rem}
+        .logo-swatch span{width:24px;height:24px;border-radius:7px;display:inline-block;animation:sp .5s ease-out backwards}
+        .logo-swatch span:nth-child(1){background:#DC2626;animation-delay:.1s}.logo-swatch span:nth-child(2){background:#F97316;animation-delay:.15s}.logo-swatch span:nth-child(3){background:#EAB308;animation-delay:.2s}.logo-swatch span:nth-child(4){background:#16A34A;animation-delay:.25s}.logo-swatch span:nth-child(5){background:#2563EB;animation-delay:.3s}.logo-swatch span:nth-child(6){background:#7C3AED;animation-delay:.35s}.logo-swatch span:nth-child(7){background:#EC4899;animation-delay:.4s}.logo-swatch span:nth-child(8){background:#06B6D4;animation-delay:.45s}
+        @keyframes sp{from{transform:scale(0) rotate(-45deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+        .start-card h1{font-size:2.5rem;font-weight:900;letter-spacing:-1px;background:linear-gradient(135deg,var(--fg) 40%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.3rem}
+        .start-card .subtitle{color:var(--muted);font-size:.9rem;margin-bottom:1.3rem}
+        .section-label{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:.6rem}
+        .pc-row{display:flex;gap:.6rem;justify-content:center;margin-bottom:1rem}
+        .pc-btn{width:52px;height:52px;border-radius:14px;border:2px solid var(--border);background:transparent;color:var(--fg);font-family:'Outfit',sans-serif;font-size:1.2rem;font-weight:800;cursor:pointer;transition:all .2s ease}
+        .pc-btn:hover{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.04);transform:translateY(-2px)}
+        .pc-btn.active{border-color:var(--accent);background:rgba(245,158,11,.12);color:var(--accent);box-shadow:0 0 20px rgba(245,158,11,.15)}
+        .names-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:1.2rem;max-height:0;overflow:hidden;transition:max-height .4s ease,opacity .3s ease;opacity:0}
+        .names-grid.show{max-height:300px;opacity:1}
+        .name-group{position:relative}
+        .name-dot{position:absolute;left:.7rem;top:50%;transform:translateY(-50%);width:10px;height:10px;border-radius:50%}
+        .name-input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:.5rem .6rem .5rem 1.9rem;color:var(--fg);font-family:'Space Grotesk',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s ease}
+        .name-input:focus{border-color:var(--accent)}
+        .name-input::placeholder{color:rgba(255,255,255,.15)}
+        .diff-table{display:grid;grid-template-columns:auto auto auto;gap:.2rem .8rem;margin-bottom:1.3rem;font-size:.78rem;text-align:left;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:10px;padding:.7rem .9rem}
+        .diff-table .dh{color:var(--muted);font-weight:500;font-size:.68rem;text-transform:uppercase;letter-spacing:.5px}
+        .diff-table .dr{color:var(--fg);font-weight:600}.diff-table .dc{color:var(--accent);font-weight:700}.diff-table .dp{color:rgba(240,237,232,.4);font-weight:500;font-size:.74rem}
+        .btn-primary{background:var(--accent);color:#0C0C14;font-weight:700;font-family:'Space Grotesk',sans-serif;font-size:1.05rem;padding:.8rem 2.2rem;border:none;border-radius:14px;cursor:pointer;transition:all .25s ease}
+        .btn-primary:hover{background:var(--accent-dark);transform:translateY(-2px);box-shadow:0 8px 30px rgba(245,158,11,.3)}
+        .btn-primary:active{transform:translateY(0)}
+
+        .transition-card{text-align:center;animation:fu .6s ease-out}
+        .trans-round{font-size:.9rem;color:var(--muted);font-weight:500;margin-bottom:.8rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
+        .trans-round .tr-num{color:var(--fg);font-weight:700;font-size:1rem}
+        .trans-circle{width:85px;height:85px;border-radius:50%;margin:0 auto 1rem;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-size:2rem;font-weight:900;color:var(--bg);border:4px solid rgba(255,255,255,.12);box-shadow:0 0 40px rgba(0,0,0,.3)}
+        .trans-name{font-size:1.7rem;font-weight:800;margin-bottom:.2rem}
+        .trans-cards{color:var(--muted);font-size:.88rem;margin-bottom:.2rem}
+        .trans-cards span{color:var(--accent);font-weight:600}
+        .trans-prev{color:var(--muted);font-size:.8rem;margin-bottom:1.4rem}
+        .trans-prev span{color:var(--fg);font-weight:600}
+        .trans-hint{color:rgba(255,255,255,.2);font-size:.75rem;margin-top:1rem}
+
+        .game-header{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:.6rem 1rem;background:rgba(12,12,20,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+        .player-badge{display:flex;align-items:center;gap:.4rem;font-size:.82rem;font-weight:600}
+        .player-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+        .round-info{font-size:.78rem;color:var(--muted);text-align:center;line-height:1.3}
+        .round-info .ri-num{color:var(--fg);font-weight:700;font-size:.85rem}
+        .header-right{display:flex;align-items:center;gap:.5rem}
+        .card-count-badge{font-size:.7rem;color:var(--muted);font-weight:500;background:rgba(255,255,255,.04);padding:.2rem .45rem;border-radius:7px;border:1px solid var(--border);display:flex;align-items:center;gap:.25rem}
+        .card-count-badge .ccn{color:var(--accent);font-weight:700}
+        .score-display{display:flex;align-items:center;gap:.4rem;font-size:1rem;font-weight:700;color:var(--accent);position:relative}
+        .score-display i{font-size:.85rem}
+        .score-pop{position:absolute;color:var(--success);font-weight:700;font-size:.9rem;pointer-events:none;animation:spop 1s ease-out forwards}
+        @keyframes spop{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-35px);opacity:0}}
+        .btn-end{background:transparent;color:var(--muted);font-weight:500;font-family:'Space Grotesk',sans-serif;font-size:.72rem;padding:.32rem .65rem;border:1px solid var(--border);border-radius:9px;cursor:pointer;transition:all .25s ease;display:flex;align-items:center;gap:.3rem}
+        .btn-end:hover{color:var(--error);border-color:rgba(239,68,68,.4);background:rgba(239,68,68,.06)}
+        .btn-end i{font-size:.65rem}
+        .progress-track{position:fixed;bottom:0;left:0;right:0;height:4px;background:var(--border);z-index:10}
+        .progress-fill{height:100%;background:var(--accent);border-radius:0 2px 2px 0;transition:width .5s ease}
+
+        .game-body{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;width:100%;max-width:780px;padding-top:58px;padding-bottom:24px;min-height:100vh}
+        .phase-label{font-family:'Outfit',sans-serif;font-size:1.3rem;font-weight:600;text-align:center;min-height:2rem}
+        .phase-label .accent{color:var(--accent)}
+        .timer-wrapper{position:relative;width:100px;height:100px;transition:opacity .4s ease,transform .4s ease}
+        .timer-wrapper.hidden{opacity:0;transform:scale(.7);pointer-events:none}
+        .timer-svg{width:100%;height:100%}
+        .timer-track{fill:none;stroke:rgba(255,255,255,.06);stroke-width:5}
+        .timer-progress{fill:none;stroke:var(--accent);stroke-width:5;stroke-linecap:round;transition:stroke .3s ease}
+        .timer-progress.warning{stroke:var(--error)}
+        .timer-text{fill:var(--fg);font-family:'Outfit',sans-serif;font-size:1.7rem;font-weight:800;text-anchor:middle;dominant-baseline:central}
+        .timer-text.warning{fill:var(--error)}
+        @keyframes tp{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+        .timer-wrapper.pulse{animation:tp .6s ease-in-out infinite}
+
+        .cards-area{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;min-height:155px;padding:.5rem}
+        @keyframes csh{0%,100%{transform:translateX(0)}15%{transform:translateX(-12px)}30%{transform:translateX(10px)}45%{transform:translateX(-8px)}60%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
+        .cards-area.shake{animation:csh .5s ease-out}
+        .game-card{width:90px;height:118px;border-radius:12px;position:relative;cursor:default;display:flex;flex-direction:column;align-items:center;justify-content:center;border:3px solid transparent;box-shadow:0 8px 28px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.15);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;user-select:none;-webkit-user-select:none;opacity:0}
+        .game-card.visible{opacity:1;animation:cr .45s ease-out forwards}
+        @keyframes cr{from{transform:scale(.6) rotateY(80deg);opacity:0}to{transform:scale(1) rotateY(0);opacity:1}}
+        .game-card.clickable{cursor:pointer}
+        .game-card.clickable:hover{transform:translateY(-5px) scale(1.04);box-shadow:0 12px 36px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.15)}
+        .game-card.clickable:active{transform:translateY(-2px) scale(.98)}
+        .game-card.selected{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(245,158,11,.35),0 12px 36px rgba(0,0,0,.5);transform:translateY(-7px) scale(1.06)}
+        .game-card.correct-border{border-color:var(--success)!important;box-shadow:0 0 0 3px rgba(34,197,94,.3)}
+        .game-card.wrong-border{border-color:var(--error)!important;box-shadow:0 0 0 3px rgba(239,68,68,.3)}
+        .card-points{position:absolute;top:-11px;right:-7px;background:var(--success);color:#fff;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:6px;opacity:0;transform:scale(.5);transition:all .3s ease;z-index:3;font-family:'Space Grotesk',sans-serif}
+        .card-points.show{opacity:1;transform:scale(1)}
+        .card-points.miss{background:var(--error);opacity:1;transform:scale(1)}
+        .card-position{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:23px;height:23px;border-radius:50%;background:var(--bg);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--accent);z-index:2}
+        .card-name{font-size:.6rem;font-weight:600;color:rgba(0,0,0,.65);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;text-shadow:0 1px 2px rgba(255,255,255,.15);padding:1px 6px;border-radius:5px;background:rgba(255,255,255,.2)}
+        @keyframes cf{0%{transform:perspective(600px) rotateY(0)}50%{transform:perspective(600px) rotateY(90deg) scale(.9)}100%{transform:perspective(600px) rotateY(0) scale(1)}}
+        .game-card.flipping{animation:cf .6s ease-in-out}
+        @keyframes so{to{transform:scale(.7);opacity:.4}}
+        @keyframes si{from{transform:scale(.7);opacity:.4}to{transform:scale(1);opacity:1}}
+        .game-card.swap-out{animation:so .15s ease-in forwards}
+        .game-card.swap-in{animation:si .2s ease-out forwards}
+
+        .feedback-msg{font-family:'Outfit',sans-serif;font-size:1.12rem;font-weight:700;text-align:center;min-height:1.5rem;line-height:1.4}
+        .feedback-msg.success{color:var(--success)}.feedback-msg.partial{color:var(--accent)}.feedback-msg.error{color:var(--error)}
+        .correct-order-ref{display:flex;align-items:center;justify-content:center;gap:4px;flex-wrap:wrap;margin-top:.2rem}
+        .correct-order-ref .label{font-size:.72rem;color:var(--muted);width:100%;text-align:center;margin-bottom:2px}
+        .mini-card{width:28px;height:36px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.3);border:2px solid rgba(255,255,255,.1);opacity:0;animation:mr .3s ease-out forwards}
+        @keyframes mr{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+
+        .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:1.5rem;animation:fi .2s ease}
+        .modal-overlay.active{display:flex}
+        .modal-box{background:#1A1A26;border:1px solid var(--border);border-radius:20px;padding:1.8rem;max-width:380px;width:100%;text-align:center;animation:fu .3s ease-out}
+        .modal-box h3{font-size:1.2rem;font-weight:700;margin-bottom:.5rem}
+        .modal-box p{color:var(--muted);font-size:.88rem;margin-bottom:1.3rem;line-height:1.5}
+        .modal-actions{display:flex;gap:.7rem;justify-content:center}
+        .modal-actions button{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:600;padding:.6rem 1.3rem;border-radius:12px;border:none;cursor:pointer;transition:all .2s ease}
+        .btn-modal-cancel{background:rgba(255,255,255,.06);color:var(--fg)}.btn-modal-cancel:hover{background:rgba(255,255,255,.1)}
+        .btn-modal-confirm{background:var(--error);color:#fff}.btn-modal-confirm:hover{background:#DC2626;transform:translateY(-1px)}
+        @keyframes fi{from{opacity:0}to{opacity:1}}
+
+        .result-card{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:24px;padding:2.5rem 2rem;max-width:500px;width:100%;text-align:center;backdrop-filter:blur(20px);animation:fu .8s ease-out}
+        .result-score{font-family:'Outfit',sans-serif;font-size:3.5rem;font-weight:900;color:var(--accent);line-height:1;margin:.6rem 0 .3rem}
+        .result-max{font-size:.9rem;color:var(--muted);margin-bottom:1rem}
+        .result-stars{font-size:2.2rem;margin-bottom:1rem;display:flex;justify-content:center;gap:.4rem}
+        .result-stars .star{color:rgba(255,255,255,.1);transition:color .3s ease,transform .3s ease}
+        .result-stars .star.filled{color:var(--accent)}
+        .result-stats{display:flex;justify-content:center;gap:1.8rem;margin-bottom:.4rem}
+        .stat-item{text-align:center}
+        .stat-value{font-size:1.6rem;font-weight:800;font-family:'Outfit',sans-serif}
+        .stat-value.green{color:var(--success)}.stat-value.red{color:var(--error)}
+        .stat-label{font-size:.72rem;color:var(--muted);margin-top:.1rem}
+        .result-detail{font-size:.8rem;color:var(--muted);margin-bottom:1.5rem}
+
+        .lb-title{font-size:1.15rem;font-weight:700;color:var(--muted);margin-bottom:1rem}
+        .lb-list{display:flex;flex-direction:column;gap:.45rem;margin-bottom:1.5rem;text-align:left}
+        .lb-row{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;border-radius:13px;background:rgba(255,255,255,.03);border:1px solid var(--border);transition:all .3s ease}
+        .lb-row.winner{border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.05)}
+        .lb-rank{font-family:'Outfit',sans-serif;font-size:1.05rem;font-weight:800;width:26px;text-align:center;flex-shrink:0}
+        .lb-rank.gold{color:#F59E0B}.lb-rank.silver{color:#94A3B8}.lb-rank.bronze{color:#D97706}.lb-rank.dim{color:var(--muted)}
+        .lb-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+        .lb-info{flex:1;min-width:0}
+        .lb-name{font-weight:700;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .lb-sub{font-size:.7rem;color:var(--muted)}
+        .lb-score{font-family:'Outfit',sans-serif;font-size:1.25rem;font-weight:800;color:var(--accent);flex-shrink:0}
+        .lb-trophy{color:#F59E0B;font-size:.95rem;flex-shrink:0}
+        .winner-banner{margin:.7rem 0 1.1rem}
+
+        .confetti-container{position:fixed;inset:0;pointer-events:none;z-index:100;overflow:hidden}
+        .confetti-piece{position:absolute;width:10px;height:10px;border-radius:2px;top:-10px;animation:cfall var(--duration) ease-out forwards;animation-delay:var(--delay)}
+        @keyframes cfall{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1}80%{opacity:1}100%{transform:translateY(calc(100vh + 50px)) rotate(var(--rot)) scale(.5);opacity:0}}
+        @keyframes fu{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+        @media(max-width:700px){.game-card{width:70px;height:95px;border-radius:10px}.card-position{width:20px;height:20px;font-size:.6rem;top:-10px}.card-name{font-size:.5rem;padding:1px 4px;margin-top:3px}.card-points{font-size:.52rem;top:-9px;right:-6px}.cards-area{gap:5px;padding:.4rem}.mini-card{width:24px;height:31px}.phase-label{font-size:1.1rem}.timer-wrapper{width:85px;height:85px}.timer-text{font-size:1.4rem}.diff-table{font-size:.72rem;gap:.18rem .6rem;padding:.6rem .7rem}}
+        @media(max-width:480px){.game-card{width:56px;height:76px;border-radius:8px}.card-position{width:17px;height:17px;font-size:.52rem;top:-8px}.card-name{font-size:.45rem;padding:0 3px}.cards-area{gap:4px}.start-card,.result-card{padding:1.6rem 1rem}.start-card h1{font-size:1.9rem}.result-score{font-size:2.6rem}.pc-btn{width:46px;height:46px;font-size:1.1rem;border-radius:12px}.name-input{font-size:.8rem;padding:.45rem .5rem .45rem 1.7rem}.lb-row{padding:.5rem .65rem}.lb-score{font-size:1.05rem}}
+        @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+    </style>
+</head>
+<body>
+    <div class="bg-blob blob-1" aria-hidden="true"></div>
+    <div class="bg-blob blob-2" aria-hidden="true"></div>
+    <div class="bg-blob blob-3" aria-hidden="true"></div>
+    <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
+
+    <div id="modal-end" class="modal-overlay" role="dialog" aria-modal="true">
+        <div class="modal-box">
+            <h3 id="modal-title">Finalizar juego</h3>
+            <p id="modal-text">Se terminará la partida.</p>
+            <div class="modal-actions">
+                <button id="modal-cancel" class="btn-modal-cancel">Cancelar</button>
+                <button id="modal-confirm" class="btn-modal-confirm">Finalizar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- INICIO -->
+    <section id="screen-start" class="screen active" role="main">
+        <div class="start-card">
+            <div class="logo-swatch" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+            <h1>Color Memory</h1>
+            <p class="subtitle">Los jugadores se alternan ronda a ronda.</p>
+            <div class="section-label">Jugadores</div>
+            <div class="pc-row" role="radiogroup" aria-label="Número de jugadores">
+                <button class="pc-btn active" data-count="1" aria-pressed="true">1</button>
+                <button class="pc-btn" data-count="2" aria-pressed="false">2</button>
+                <button class="pc-btn" data-count="3" aria-pressed="false">3</button>
+                <button class="pc-btn" data-count="4" aria-pressed="false">4</button>
+            </div>
+            <div id="names-grid" class="names-grid"></div>
+            <div class="diff-table" aria-label="Tabla de dificultad">
+                <span class="dh">Rondas</span><span class="dh">Tarjetas</span><span class="dh">Pts / carta</span>
+                <span class="dr">1 – 2</span><span class="dc">3</span><span class="dp">25</span>
+                <span class="dr">3 – 4</span><span class="dc">4</span><span class="dp">35</span>
+                <span class="dr">5 – 6</span><span class="dc">5</span><span class="dp">45</span>
+                <span class="dr">7 – 8</span><span class="dc">6</span><span class="dp">55</span>
+                <span class="dr">9 – 10</span><span class="dc">7</span><span class="dp">65</span>
+                <span class="dr">11 – 12</span><span class="dc">8</span><span class="dp">75</span>
+            </div>
+            <button id="btn-start" class="btn-primary">Comenzar</button>
+        </div>
+    </section>
+
+    <!-- TRANSICIÓN -->
+    <section id="screen-transition" class="screen" role="main">
+        <div class="transition-card">
+            <div id="trans-round" class="trans-round"></div>
+            <div id="trans-circle" class="trans-circle"></div>
+            <div id="trans-name" class="trans-name"></div>
+            <div id="trans-cards" class="trans-cards"></div>
+            <div id="trans-prev" class="trans-prev"></div>
+            <button id="btn-trans-start" class="btn-primary">Comenzar</button>
+            <div class="trans-hint">Prepara al siguiente jugador antes de tocar</div>
+        </div>
+    </section>
+
+    <!-- JUEGO -->
+    <section id="screen-game" class="screen" role="main">
+        <header class="game-header">
+            <div id="player-badge" class="player-badge" style="display:none">
+                <div id="player-dot" class="player-dot"></div>
+                <span id="player-name-h"></span>
+            </div>
+            <div class="round-info">Ronda <span id="round-num" class="ri-num">1</span> / 12</div>
+            <div class="header-right">
+                <div class="card-count-badge"><i class="fas fa-layer-group" style="font-size:.6rem"></i><span class="ccn" id="cc-num">3</span> cartas</div>
+                <div class="score-display" style="position:relative"><i class="fas fa-star"></i><span id="score-num">0</span></div>
+                <button id="btn-end-game" class="btn-end"><i class="fas fa-stop"></i> Terminar</button>
+            </div>
+        </header>
+        <div class="game-body">
+            <div id="phase-label" class="phase-label">Memoriza el orden</div>
+            <div id="timer-wrapper" class="timer-wrapper">
+                <svg class="timer-svg" viewBox="0 0 120 120">
+                    <circle class="timer-track" cx="60" cy="60" r="52"/>
+                    <circle id="timer-circle" class="timer-progress" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="0" transform="rotate(-90 60 60)"/>
+                    <text id="timer-text" class="timer-text" x="60" y="62">10</text>
+                </svg>
+            </div>
+            <div id="cards-area" class="cards-area" role="list"></div>
+            <div id="feedback-msg" class="feedback-msg" aria-live="polite"></div>
+            <div id="correct-order-ref" class="correct-order-ref"></div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;min-height:48px">
+                <button id="btn-validate" class="btn-primary" style="display:none">Validar orden</button>
+                <button id="btn-next" class="btn-primary" style="display:none">Siguiente</button>
+            </div>
+        </div>
+        <div class="progress-track"><div id="progress-fill" class="progress-fill" style="width:0%"></div></div>
+    </section>
+
+    <!-- RESULTADOS -->
+    <section id="screen-results" class="screen" role="main">
+        <div id="result-content" class="result-card"></div>
+    </section>
+
+    <script>
+        const colorPool=[{name:'Rojo',hex:'#DC2626'},{name:'Naranja',hex:'#F97316'},{name:'Amarillo',hex:'#EAB308'},{name:'Verde',hex:'#16A34A'},{name:'Azul',hex:'#2563EB'},{name:'Violeta',hex:'#7C3AED'},{name:'Rosa',hex:'#EC4899'},{name:'Lima',hex:'#84CC16'},{name:'Cian',hex:'#06B6D4'},{name:'Fucsia',hex:'#D946EF'}];
+        const TOTAL_ROUNDS=12,MEMORIZE_MS=10000,CIRC=2*Math.PI*52;
+        const PPC={3:25,4:35,5:45,6:55,7:65,8:75};
+        const MAX_SCORE=2*(75+140+225+330+455+600);
+        const PCOLORS=['#F59E0B','#06B6D4','#EC4899','#84CC16'];
+        const DNAMES=['Jugador 1','Jugador 2','Jugador 3','Jugador 4'];
+
+        /* Torneo: alterna jugadores cada ronda */
+        let T={pc:1,players:[],round:1,pIdx:0,turn:0,totalTurns:12};
+        /* Estado de la ronda actual */
+        let G={score:0,cCards:0,wCards:0,perfects:0,cOrder:[],oOrder:[],sel:null,phase:'idle',raf:null};
+
+        const $=s=>document.querySelector(s),$$=s=>document.querySelectorAll(s);
+        const scr={start:$('#screen-start'),trans:$('#screen-transition'),game:$('#screen-game'),res:$('#screen-results')};
+        function show(k){Object.values(scr).forEach(s=>s.classList.remove('active'));scr[k].classList.add('active');}
+
+        /* ---- Selección jugadores ---- */
+        let selCount=1;
+        const pcBtns=$$('.pc-btn'),namesGrid=$('#names-grid');
+        function buildInputs(){
+            namesGrid.innerHTML='';
+            for(let i=0;i<selCount;i++){const g=document.createElement('div');g.className='name-group';g.innerHTML=`<div class="name-dot" style="background:${PCOLORS[i]}"></div><input type="text" class="name-input" data-idx="${i}" value="${DNAMES[i]}" maxlength="12" placeholder="Nombre">`;namesGrid.appendChild(g);}
+            namesGrid.classList.toggle('show',selCount>1);
+        }
+        buildInputs();
+        pcBtns.forEach(b=>b.addEventListener('click',()=>{pcBtns.forEach(x=>{x.classList.remove('active');x.setAttribute('aria-pressed','false')});b.classList.add('active');b.setAttribute('aria-pressed','true');selCount=+b.dataset.count;buildInputs();}));
+
+        /* ---- Utilidades ---- */
+        function cntR(r){return r<=2?3:r<=4?4:r<=5?5:r<=8?6:r<=10?7:8;}
+        function ppcR(r){return PPC[cntR(r)];}
+        function pick(n){const s=[...colorPool].sort(()=>Math.random()-.5);return s.slice(0,n);}
+        function shuf(a){const r=[...a];let t=0;do{for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}t++;}while(r.every((v,i)=>v.hex===a[i].hex)&&t<50);return r;}
+
+        /* ---- Temporizador ---- */
+        function startT(d,fn){const s=performance.now();const tw=$('#timer-wrapper'),tc=$('#timer-circle'),tt=$('#timer-text');tw.classList.remove('hidden','pulse');tc.classList.remove('warning');tt.classList.remove('warning');(function u(n){const r=Math.max(0,d-(n-s)),p=r/d;tc.style.strokeDashoffset=CIRC*(1-p);tt.textContent=Math.ceil(r/1000);if(r<=3000&&r>0){tc.classList.add('warning');tt.classList.add('warning');tw.classList.add('pulse');}if(r<=0){tw.classList.remove('pulse');fn();return;}G.raf=requestAnimationFrame(u);})(performance.now());}
+        function stopT(){if(G.raf){cancelAnimationFrame(G.raf);G.raf=null;}}
+
+        /* ---- Render tarjetas ---- */
+        function render(ph){const o=ph==='mem'?G.cOrder:G.oOrder;const sn=ph==='mem',cl=ph==='order';const ca=$('#cards-area');ca.innerHTML='';o.forEach((c,i)=>{const d=document.createElement('div');d.className='game-card';d.dataset.index=i;d.setAttribute('role','listitem');d.style.backgroundColor=c.hex;if(sn){const p=document.createElement('div');p.className='card-position';p.textContent=i+1;d.appendChild(p);}if(cl){d.classList.add('clickable');if(G.sel===i)d.classList.add('selected');}const n=document.createElement('div');n.className='card-name';n.textContent=c.name;d.appendChild(n);d.style.animationDelay=`${i*.06}s`;void d.offsetWidth;d.classList.add('visible');ca.appendChild(d);});}
+
+        /* ---- Flujo torneo ---- */
+        function startTourney(){
+            T.pc=selCount;T.players=[];T.round=1;T.pIdx=0;T.turn=0;T.totalTurns=TOTAL_ROUNDS*selCount;
+            const ins=$$('.name-input');
+            for(let i=0;i<T.pc;i++)T.players.push({name:(ins[i]&&ins[i].value.trim())||DNAMES[i],color:PCOLORS[i],score:0,cCards:0,wCards:0,perfects:0});
+            if(T.pc===1)beginTurn();else showTrans();
+        }
+
+        function showTrans(){
+            const p=T.players[T.pIdx],cnt=cntR(T.round);
+            document.documentElement.style.setProperty('--player',p.color);
+            $('#trans-round').innerHTML=`<i class="fas fa-hashtag" style="font-size:.7rem"></i> Ronda <span class="tr-num">${T.round}</span> de ${TOTAL_ROUNDS}`;
+            $('#trans-circle').style.backgroundColor=p.color;
+            $('#trans-circle').textContent=p.name.charAt(0).toUpperCase();
+            $('#trans-name').style.color=p.color;
+            $('#trans-name').textContent=p.name;
+            $('#trans-cards').innerHTML=`<span>${cnt}</span> tarjetas — <span>${ppcR(T.round)} pts</span> cada una`;
+            // Mostrar resultado del turno anterior si existe
+            if(T.turn>0){const prevP=T.players[(T.pIdx-T.pc+T.pc)%T.pc];$('#trans-prev').innerHTML=`${prevP.name}: <span>+${G._lastPts} puntos</span>`;$('#trans-prev').style.display='';}
+            else{$('#trans-prev').style.display='none';}
+            show('trans');
+        }
+        G._lastPts=0;
+        $('#btn-trans-start').addEventListener('click',beginTurn);
+
+        function beginTurn(){
+            const p=T.players[T.pIdx];
+            document.documentElement.style.setProperty('--player',p.color);
+            const badge=$('#player-badge');
+            if(T.pc>1){badge.style.display='flex';$('#player-dot').style.backgroundColor=p.color;$('#player-name-h').textContent=p.name;$('#player-name-h').style.color=p.color;}
+            else badge.style.display='none';
+            G.score=0;G.cCards=0;G.wCards=0;G.perfects=0;G.sel=null;G.phase='idle';
+            $('#score-num').textContent='0';
+            show('game');
+            startRound();
+        }
+
+        /* ---- Flujo ronda ---- */
+        function startRound(){
+            G.sel=null;G.phase='mem';
+            const cnt=cntR(T.round);
+            $('#round-num').textContent=T.round;
+            $('#cc-num').textContent=cnt;
+            $('#progress-fill').style.width=`${(T.turn/T.totalTurns)*100}%`;
+            $('#feedback-msg').textContent='';$('#feedback-msg').className='feedback-msg';
+            $('#correct-order-ref').innerHTML='';
+            $('#btn-validate').style.display='none';$('#btn-next').style.display='none';
+            $('#timer-wrapper').classList.remove('hidden');
+            $('#phase-label').innerHTML='Memoriza el <span class="accent">orden</span>';
+            G.cOrder=pick(cnt);G.oOrder=[...G.cOrder];
+            render('mem');startT(MEMORIZE_MS,startFlip);
+        }
+
+        function startFlip(){
+            G.phase='flip';stopT();
+            $('#phase-label').innerHTML='Preparando...';
+            $('#timer-wrapper').classList.add('hidden');
+            const cs=$('#cards-area').querySelectorAll('.game-card');
+            cs.forEach((c,i)=>{c.style.animationDelay=`${i*.08}s`;c.classList.add('flipping');});
+            const d=(cs.length-1)*80+280;
+            setTimeout(()=>{G.oOrder=shuf(G.cOrder);},d);
+            setTimeout(startOrd,d+280);
+        }
+
+        function startOrd(){
+            G.phase='order';G.sel=null;
+            $('#phase-label').innerHTML='Ordena los <span class="accent">colores</span>';
+            $('#btn-validate').style.display='';
+            render('order');
+        }
+
+        /* ---- Interacción ---- */
+        $('#cards-area').addEventListener('click',e=>{if(G.phase!=='order')return;const c=e.target.closest('.game-card');if(!c||!c.classList.contains('clickable'))return;selSlot(+c.dataset.index);});
+        function selSlot(i){if(G.sel===null){G.sel=i;const c=$('#cards-area').children[i];if(c)c.classList.add('selected');}else if(G.sel===i){G.sel=null;const c=$('#cards-area').children[i];if(c)c.classList.remove('selected');}else swap(G.sel,i);}
+        function swap(a,b){const cA=$('#cards-area').children[a],cB=$('#cards-area').children[b];if(!cA||!cB)return;G.sel=null;cA.classList.add('swap-out');cB.classList.add('swap-out');setTimeout(()=>{[G.oOrder[a],G.oOrder[b]]=[G.oOrder[b],G.oOrder[a]];render('order');const nA=$('#cards-area').children[a],nB=$('#cards-area').children[b];if(nA){nA.classList.add('swap-in');nA.classList.remove('visible');}if(nB){nB.classList.add('swap-in');nB.classList.remove('visible');}},150);}
+
+        /* ---- Validación por carta ---- */
+        $('#btn-validate').addEventListener('click',validate);
+        function validate(){
+            if(G.phase!=='order')return;G.phase='fb';$('#btn-validate').style.display='none';
+            const cnt=G.cOrder.length,pp=ppcR(T.round);let cc=0;
+            Array.from($('#cards-area').children).forEach((card,i)=>{
+                const ok=G.oOrder[i].hex===G.cOrder[i].hex;if(ok)cc++;
+                const bg=document.createElement('div');bg.className='card-points';
+                if(ok){bg.textContent=`+${pp}`;bg.classList.add('show');card.classList.add('correct-border');}
+                else{bg.textContent='0';bg.classList.add('miss');card.classList.add('wrong-border');}
+                bg.style.transitionDelay=`${i*.07}s`;card.appendChild(bg);
+            });
+            const wc=cnt-cc,earned=cc*pp;
+            G.score+=earned;G.cCards+=cc;G.wCards+=wc;if(cc===cnt)G.perfects++;
+            animPop(earned);$('#score-num').textContent=G.score;
+
+            if(cc===cnt){$('#feedback-msg').textContent=`Perfecto! +${earned} puntos`;$('#feedback-msg').className='feedback-msg success';confetti();}
+            else if(cc===0){$('#feedback-msg').textContent='Ninguna carta bien colocada';$('#feedback-msg').className='feedback-msg error';$('#cards-area').classList.add('shake');setTimeout(()=>$('#cards-area').classList.remove('shake'),500);}
+            else{$('#feedback-msg').textContent=`${cc} de ${cnt} correctas — +${earned} puntos`;$('#feedback-msg').className='feedback-msg partial';}
+
+            if(wc>0)setTimeout(()=>{$('#correct-order-ref').innerHTML='<div class="label">Orden correcto:</div>';G.cOrder.forEach((c,i)=>{const m=document.createElement('div');m.className='mini-card';m.style.backgroundColor=c.hex;m.style.animationDelay=`${i*.06}s`;m.title=c.name;$('#correct-order-ref').appendChild(m);});},500);
+
+            $('#btn-next').style.display='';
+            $('#btn-next').textContent=T.round>=TOTAL_ROUNDS&&T.pIdx>=T.pc-1?'Ver resultados':'Siguiente';
+        }
+
+        function animPop(pts){if(pts<=0)return;const p=$('#score-num').parentElement;const d=document.createElement('div');d.className='score-pop';d.textContent=`+${pts}`;d.style.left='0';d.style.top='-10px';p.appendChild(d);setTimeout(()=>d.remove(),1000);}
+
+        /* ---- Avance de turno ---- */
+        function advanceTurn(){
+            stopT();
+            // Guardar datos del jugador actual
+            const p=T.players[T.pIdx];
+            p.score+=G.score;p.cCards+=G.cCards;p.wCards+=G.wCards;p.perfects+=G.perfects;
+            G._lastPts=G.score;
+            T.turn++;
+
+            // Calcular siguiente
+            if(T.pIdx<T.pc-1){
+                // Mismo round, siguiente jugador
+                T.pIdx++;
+                if(T.pc>1)showTrans();else beginTurn();
+            }else{
+                // Todos jugaron esta ronda → siguiente ronda
+                T.pIdx=0;
+                if(T.round<TOTAL_ROUNDS){
+                    T.round++;
+                    if(T.pc>1)showTrans();else beginTurn();
+                }else{
+                    showResults();
+                }
+            }
+        }
+
+        $('#btn-next').addEventListener('click',advanceTurn);
+
+        /* ---- Confetti ---- */
+        function confetti(){$('#confetti-container').innerHTML='';const cols=['#F59E0B','#22C55E','#EF4444','#2563EB','#EC4899','#84CC16','#D946EF','#06B6D4'];for(let i=0;i<50;i++){const p=document.createElement('div');p.className='confetti-piece';p.style.left=`${Math.random()*100}%`;p.style.backgroundColor=cols[Math.floor(Math.random()*cols.length)];p.style.setProperty('--delay',`${Math.random()*.4}s`);p.style.setProperty('--duration',`${1.2+Math.random()*.8}s`);p.style.setProperty('--rot',`${360+Math.random()*720}deg`);p.style.width=`${6+Math.random()*8}px`;p.style.height=`${6+Math.random()*8}px`;p.style.borderRadius=Math.random()>.5?'50%':'2px';$('#confetti-container').appendChild(p);}setTimeout(()=>{$('#confetti-container').innerHTML='';},2500);}
+
+        /* ---- Modal ---- */
+        $('#btn-end-game').addEventListener('click',()=>{const p=T.players[T.pIdx];$('#modal-title').textContent=`Terminar partida`;$('#modal-text').textContent=`Se guardarán los puntos de ${p.name} en esta ronda y se mostrarán los resultados.`;$('#modal-end').classList.add('active');$('#modal-confirm').focus();});
+        $('#modal-cancel').addEventListener('click',closeM);
+        $('#modal-end').addEventListener('click',e=>{if(e.target===$('#modal-end'))closeM();});
+        function closeM(){$('#modal-end').classList.remove('active');$('#btn-end-game').focus();}
+        $('#modal-confirm').addEventListener('click',()=>{closeM();
+            // Guardar puntos del turno actual y mostrar resultados
+            const p=T.players[T.pIdx];p.score+=G.score;p.cCards+=G.cCards;p.wCards+=G.wCards;p.perfects+=G.perfects;
+            stopT();showResults();
+        });
+
+        /* ---- Resultados ---- */
+        function showResults(){
+            $('#progress-fill').style.width='100%';show('res');
+            const rc=$('#result-content');
+
+            if(T.pc===1){
+                const p=T.players[0],tot=p.cCards+p.wCards,pct=tot>0?Math.round(p.cCards/tot*100):0;
+                rc.innerHTML=`<h2 style="font-size:1.3rem;font-weight:600;color:var(--muted)">Resultado final</h2>
+                    <div class="result-score" id="rs">0</div><div class="result-max">de ${MAX_SCORE} puntos</div>
+                    <div class="result-stars" id="rst"><i class="fas fa-star star"></i><i class="fas fa-star star"></i><i class="fas fa-star star"></i></div>
+                    <div class="result-stats"><div class="stat-item"><div class="stat-value green">${p.cCards}</div><div class="stat-label">Cartas correctas</div></div><div class="stat-item"><div class="stat-value red">${p.wCards}</div><div class="stat-label">Cartas fallidas</div></div></div>
+                    <div class="result-detail">${pct}% de acierto — ${p.perfects} ronda${p.perfects!==1?'s':''} perfecta${p.perfects!==1?'s':''}</div>
+                    <button class="btn-primary" id="btn-replay">Jugar de nuevo</button>`;
+                const st=performance.now();(function cu(n){const pr=Math.min(1,(n-st)/1500),e=1-Math.pow(1-pr,3);$('#rs').textContent=Math.round(e*p.score);if(pr<1)requestAnimationFrame(cu);})(performance.now());
+                const sp=p.score/MAX_SCORE,sc=sp>=.9?3:sp>=.6?2:sp>=.3?1:0;
+                $$('#rst .star').forEach((s,i)=>{setTimeout(()=>{if(i<sc){s.classList.add('filled');s.style.transform='scale(1.3)';setTimeout(()=>s.style.transform='scale(1)',200);}},800+i*300);});
+                if(sc>=2)setTimeout(confetti,1000);
+            }else{
+                const sorted=[...T.players].sort((a,b)=>b.score-a.score);
+                const rk=['gold','silver','bronze','dim'];
+                let rows='';
+                sorted.forEach((p,i)=>{
+                    const tot=p.cCards+p.wCards,pct=tot>0?Math.round(p.cCards/tot*100):0;
+                    rows+=`<div class="lb-row${i===0?' winner':''}" style="animation:fu .5s ease-out ${i*.15}s both">
+                        <div class="lb-rank ${rk[i]}">${i===0?'<i class="fas fa-trophy"></i>':i+1}</div>
+                        <div class="lb-dot" style="background:${p.color}"></div>
+                        <div class="lb-info"><div class="lb-name">${p.name}</div><div class="lb-sub">${pct}% acierto — ${p.perfects} perfecta${p.perfects!==1?'s':''}</div></div>
+                        <div class="lb-score">${p.score}</div></div>`;
+                });
+                const w=sorted[0];
+                rc.innerHTML=`<h2 style="font-size:1.3rem;font-weight:600;color:var(--muted)">Clasificación final</h2>
+                    <div class="winner-banner"><span style="color:${w.color};font-family:'Outfit',sans-serif;font-size:1.5rem;font-weight:800">${w.name}</span><span style="color:var(--muted);font-size:.9rem"> gana con </span><span style="color:var(--accent);font-weight:700">${w.score} puntos</span></div>
+                    <div class="lb-list">${rows}</div>
+                    <button class="btn-primary" id="btn-replay">Jugar de nuevo</button>`;
+                setTimeout(confetti,600);
+            }
+            $('#btn-replay').addEventListener('click',()=>{document.documentElement.style.setProperty('--player','#F59E0B');show('start');});
+        }
+
+        /* ---- Eventos ---- */
+        $('#btn-start').addEventListener('click',startTourney);
+        document.addEventListener('keydown',e=>{
+            if(e.key==='Escape'&&$('#modal-end').classList.contains('active')){closeM();return;}
+            if($('#modal-end').classList.contains('active'))return;
+            if(e.key==='Enter'){
+                if(scr.start.classList.contains('active'))startTourney();
+                else if(scr.trans.classList.contains('active'))$('#btn-trans-start').click();
+                else if(scr.game.classList.contains('active')){if(G.phase==='order'&&$('#btn-validate').style.display!=='none')validate();else if(G.phase==='fb'&&$('#btn-next').style.display!=='none')advanceTurn();}
+                else if(scr.res.classList.contains('active'))$('#btn-replay').click();
+            }
+            if(G.phase==='order'){const n=parseInt(e.key),c=cntR(T.round);if(n>=1&&n<=c)selSlot(n-1);}
+        });
+    </script>
+</body>
+</html>
